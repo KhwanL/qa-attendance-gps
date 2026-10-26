@@ -1,33 +1,16 @@
 <!doctype html>
-<html lang="th">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>QA Attendance — GPS Test</title>
-<style>body{font-family:system-ui,sans-serif;background:#f6f8fb;margin:0;padding:28px;color:#1f2937}main{max-width:460px;margin:auto;background:white;border-radius:18px;padding:24px;box-shadow:0 8px 30px #0001}button{background:#06c755;color:white;border:0;border-radius:10px;padding:13px 18px;font-size:16px;width:100%;margin:10px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5f8;padding:14px;border-radius:10px}a{color:#087d3b}</style>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QA Attendance GPS Check In</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-</head>
-<body><main><h2>📍 QA Attendance — GPS Test</h2><p>ทดลองอ่าน GPS เท่านั้น <strong>ยังไม่บันทึก CHECK IN</strong> หรือส่งพิกัดไปยังเซิร์ฟเวอร์</p><p id="status">กำลังเตรียม LIFF...</p><button id="btn" type="button">อนุญาตและอ่านตำแหน่ง</button><pre id="output">ยังไม่มีข้อมูลตำแหน่ง</pre><p id="link"></p></main>
+<style>body{font-family:system-ui,sans-serif;background:#f5f7fa;padding:22px;color:#1c2939}main{max-width:440px;margin:40px auto;padding:26px;background:white;border-radius:18px;box-shadow:0 5px 25px #0001}button{width:100%;padding:17px;border:0;border-radius:12px;background:#06c755;color:white;font-weight:bold;font-size:17px}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f5f9;padding:15px;border-radius:10px}small{color:#526174}</style>
+</head><body><main><h2>📍 QA Attendance — GPS CHECK IN</h2>
+<p>ระบบจะขออนุญาตอ่านตำแหน่งเมื่อกดปุ่ม และส่งข้อมูลกลับเข้าแชต LINE เพื่อบันทึกเวลาเข้างาน</p>
+<button id="go" disabled>กำลังเชื่อมต่อ LINE...</button><p id="status">กำลังเตรียมระบบ</p><pre id="detail">ยังไม่ได้อ่านตำแหน่ง</pre><small>ต้องเปิดผ่าน LIFF ใน LINE และกด CHECK IN ในแชตก่อน ข้อมูล GPS ใช้สำหรับลงเวลาเข้างาน</small></main>
 <script>
-const LIFF_ID = '2012205870-cIwGKg7e';
-const statusEl = document.getElementById('status');
-const outputEl = document.getElementById('output');
-const linkEl = document.getElementById('link');
-async function init(){
- if(LIFF_ID.startsWith('REPLACE_')) {statusEl.textContent='ยังไม่ได้ใส่ LIFF ID (ทดลอง GPS ผ่าน HTTPS ได้ด้วยปุ่มด้านล่าง)';return;}
- try {await liff.init({liffId:LIFF_ID});statusEl.textContent='LIFF พร้อมใช้งาน'+(liff.isInClient()?' (เปิดใน LINE)':' (เปิดในเบราว์เซอร์)');}
- catch(e){statusEl.textContent='LIFF init ไม่สำเร็จ: '+e.message;}
-}
-function readGPS(){
- if(!navigator.geolocation){statusEl.textContent='อุปกรณ์นี้ไม่รองรับ GPS ผ่านเว็บ';return;}
- statusEl.textContent='กำลังขออนุญาตตำแหน่ง...';
- navigator.geolocation.getCurrentPosition(pos=>{
- const lat=pos.coords.latitude,lon=pos.coords.longitude;
- statusEl.textContent='✅ อ่านตำแหน่งสำเร็จ (ยังไม่บันทึกเวลาเข้างาน)';
- outputEl.textContent=`Latitude: ${lat}\nLongitude: ${lon}\nAccuracy: ประมาณ ${Math.round(pos.coords.accuracy)} เมตร`;
- const url=`https://www.google.com/maps?q=${encodeURIComponent(lat+','+lon)}`;
- linkEl.replaceChildren();const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='เปิดตำแหน่งบน Google Maps';linkEl.append(a);
- },err=>{statusEl.textContent='❌ อ่านตำแหน่งไม่สำเร็จ: '+err.message+' (รหัส '+err.code+')';},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
-}
-document.getElementById('btn').addEventListener('click',readGPS);
+const LIFF_ID='2012205870-cIwGKg7e';
+const go=document.getElementById('go'),status=document.getElementById('status'),detail=document.getElementById('detail');
+async function init(){try{await liff.init({liffId:LIFF_ID});if(!liff.isInClient()){status.textContent='กรุณาเปิดลิงก์ LIFF ผ่านแชต LINE';go.textContent='เปิดผ่าน LINE เพื่อ CHECK IN';return;}status.textContent='พร้อมอ่านตำแหน่ง';go.textContent='อนุญาต GPS และยืนยัน CHECK IN';go.disabled=false;}catch(e){status.textContent='เชื่อมต่อ LIFF ไม่สำเร็จ: '+e.message;}}
+go.onclick=()=>{go.disabled=true;status.textContent='กำลังขอ GPS...';if(!navigator.geolocation){status.textContent='อุปกรณ์ไม่รองรับ GPS';go.disabled=false;return;}
+navigator.geolocation.getCurrentPosition(async pos=>{const {latitude,longitude,accuracy}=pos.coords;detail.textContent=`Latitude: ${latitude}\nLongitude: ${longitude}\nAccuracy: ${Math.round(accuracy)} เมตร`;try{status.textContent='กำลังส่งข้อมูลเข้า LINE...';const msg=`GPSCHECKIN|${latitude}|${longitude}|${accuracy}|${Date.now()}`;await liff.sendMessages([{type:'text',text:msg}]);status.textContent='✅ ส่งข้อมูลแล้ว กรุณากลับไปดูผล CHECK IN ในแชต LINE';go.textContent='ส่งสำเร็จ';}catch(e){status.textContent='ส่งข้อมูลไม่สำเร็จ: '+e.message;go.disabled=false;}},err=>{status.textContent='อ่าน GPS ไม่สำเร็จ: '+err.message;go.disabled=false;},{enableHighAccuracy:true,timeout:20000,maximumAge:0});};
 init();
 </script></body></html>
