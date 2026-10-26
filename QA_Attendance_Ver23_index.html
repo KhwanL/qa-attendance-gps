@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QA Attendance GPS Check In</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>body{font-family:system-ui,sans-serif;background:#f5f7fa;padding:22px;color:#1c2939}main{max-width:440px;margin:40px auto;padding:26px;background:white;border-radius:18px;box-shadow:0 5px 25px #0001}button{width:100%;padding:17px;border:0;border-radius:12px;background:#06c755;color:white;font-weight:bold;font-size:17px}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f5f9;padding:15px;border-radius:10px}small{color:#526174}</style>
+</head><body><main><h2>📍 QA Attendance — GPS CHECK IN</h2>
+<p>ระบบจะขออนุญาตอ่านตำแหน่งเมื่อกดปุ่ม และส่งข้อมูลกลับเข้าแชต LINE เพื่อบันทึกเวลาเข้างาน</p>
+<button id="go" disabled>กำลังเชื่อมต่อ LINE...</button><p id="status">กำลังเตรียมระบบ</p><pre id="detail">ยังไม่ได้อ่านตำแหน่ง</pre><small>ต้องเปิดผ่าน LIFF ใน LINE และกด CHECK IN ในแชตก่อน ข้อมูล GPS ใช้สำหรับลงเวลาเข้างาน</small></main>
+<script>
+const LIFF_ID='2012205870-cIwGKg7e';
+const go=document.getElementById('go'),status=document.getElementById('status'),detail=document.getElementById('detail');
+async function init(){try{await liff.init({liffId:LIFF_ID});if(!liff.isInClient()){status.textContent='กรุณาเปิดลิงก์ LIFF ผ่านแชต LINE';go.textContent='เปิดผ่าน LINE เพื่อ CHECK IN';return;}status.textContent='พร้อมอ่านตำแหน่ง';go.textContent='อนุญาต GPS และยืนยัน CHECK IN';go.disabled=false;}catch(e){status.textContent='เชื่อมต่อ LIFF ไม่สำเร็จ: '+e.message;}}
+go.onclick=()=>{go.disabled=true;status.textContent='กำลังขอ GPS...';if(!navigator.geolocation){status.textContent='อุปกรณ์ไม่รองรับ GPS';go.disabled=false;return;}
+navigator.geolocation.getCurrentPosition(async pos=>{const {latitude,longitude,accuracy}=pos.coords;detail.textContent=`Latitude: ${latitude}\nLongitude: ${longitude}\nAccuracy: ${Math.round(accuracy)} เมตร`;try{status.textContent='กำลังส่งข้อมูลเข้า LINE...';const msg=`GPSCHECKIN|${latitude}|${longitude}|${accuracy}|${Date.now()}`;await liff.sendMessages([{type:'text',text:msg}]);status.textContent='✅ ส่งข้อมูลแล้ว กรุณากลับไปดูผล CHECK IN ในแชต LINE';go.textContent='ส่งสำเร็จ';}catch(e){status.textContent='ส่งข้อมูลไม่สำเร็จ: '+e.message;go.disabled=false;}},err=>{status.textContent='อ่าน GPS ไม่สำเร็จ: '+err.message;go.disabled=false;},{enableHighAccuracy:true,timeout:20000,maximumAge:0});};
+init();
+</script></body></html>
