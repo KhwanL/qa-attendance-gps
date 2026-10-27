@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QA Attendance — GPS CHECK OUT</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#f3f5fa;color:#172333;padding:24px}main{max-width:440px;margin:50px auto;background:white;border-radius:22px;padding:28px;box-shadow:0 6px 26px #0001}h2{font-size:24px}button{width:100%;border:0;border-radius:12px;background:#00c853;color:white;padding:17px;font-size:18px;font-weight:700;margin:18px 0}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f5fa;padding:14px;border-radius:12px}small{color:#667085}</style>
+</head>
+<body><main>
+<h2>📍 QA Attendance — GPS CHECK OUT</h2>
+<p>ยืนยันตำแหน่งเพื่อบันทึกเวลาออกงานผ่าน LINE</p>
+<button id="go" disabled>กำลังเชื่อมต่อ LINE...</button>
+<p id="status">กำลังเริ่มระบบ</p>
+<pre id="detail">ยังไม่มีข้อมูลตำแหน่ง</pre>
+<small>ต้องเปิดหน้านี้ผ่าน LIFF ในแชต LINE และอนุญาตการเข้าถึงตำแหน่ง</small>
+</main>
+<script>
+const LIFF_ID = 'REPLACE_WITH_CHECKOUT_LIFF_ID';
+const go = document.getElementById('go');
+const statusEl = document.getElementById('status');
+const detail = document.getElementById('detail');
+async function init(){
+ try {
+  await liff.init({liffId:LIFF_ID});
+  if(!liff.isInClient()){
+   statusEl.textContent='กรุณาเปิดผ่านเมนู CHECK OUT ในแชต LINE';
+   go.textContent='เปิดผ่าน LINE เพื่อ CHECK OUT';return;
+  }
+  if(!liff.isApiAvailable('shareTargetPicker') && !liff.isInClient()) return;
+  statusEl.textContent='พร้อมอ่าน GPS';
+  go.textContent='อนุญาต GPS และยืนยัน CHECK OUT';go.disabled=false;
+ }catch(err){statusEl.textContent='LIFF init ไม่สำเร็จ: '+err.message;}
+}
+go.onclick=()=>{
+ go.disabled=true;statusEl.textContent='กำลังอ่าน GPS...';
+ if(!navigator.geolocation){statusEl.textContent='อุปกรณ์ไม่รองรับ GPS';go.disabled=false;return;}
+ navigator.geolocation.getCurrentPosition(async pos=>{
+  const {latitude,longitude,accuracy}=pos.coords;
+  const timestamp=pos.timestamp;
+  detail.textContent=`Latitude: ${latitude}\nLongitude: ${longitude}\nAccuracy: ${Math.round(accuracy)} เมตร`;
+  const message=`GPSCHECKOUT|${latitude}|${longitude}|${accuracy}|${timestamp}`;
+  try {
+   statusEl.textContent='กำลังส่งข้อมูลเข้า LINE...';
+   await liff.sendMessages([{type:'text',text:message}]);
+   statusEl.textContent='✅ ส่ง GPS CHECK OUT แล้ว กรุณาดูข้อความยืนยันในแชต';
+   go.textContent='ส่งข้อมูลแล้ว';
+  }catch(err){statusEl.textContent='ส่งข้อมูลไม่สำเร็จ: '+err.message;go.disabled=false;}
+ },err=>{statusEl.textContent='อ่าน GPS ไม่สำเร็จ: '+err.message;go.disabled=false;},
+ {enableHighAccuracy:true,timeout:20000,maximumAge:0});
+};
+init();
+</script></body></html>
